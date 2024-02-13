@@ -18,6 +18,7 @@ We are planning on creating an RC car with auto breaking capabilities. The vehic
 
 
 
+![ECE395Car drawio](https://github.com/adrieltap/BotBuddy/assets/142434056/69070647-e051-4cde-ae23-c610b9f64e70)
 
 
 
