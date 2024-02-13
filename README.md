@@ -8,9 +8,9 @@ Milan Patel
 
 # Project Name
 
-# BotBuddy
+BotBuddy
 
-Abstract
+# Abstract
 
 We are planning on creating an RC car with auto breaking capabilities. The vehicle will be controlled using a remote controller. To add the auto break, we will use an Ultra-Sonic Sensor, specifically the HC-SR04 to detect objects that are in front of the vehicle. For our RF transmitter and receiver, we will use [Insert part here]. Our motors will be [Insert Part here]. We will also need a battery [Insert Part Here] to be able to control the car since it will be wireless.  We will also need wheels, a chasis, and a servo motor.
 
