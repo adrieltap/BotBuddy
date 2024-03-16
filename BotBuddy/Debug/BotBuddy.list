@@ -1092,7 +1092,6 @@ static void MX_TIM2_Init(void)
  8000800:	4b03      	ldr	r3, [pc, #12]	; (8000810 <MX_TIM2_Init+0xcc>)
  8000802:	0018      	movs	r0, r3
  8000804:	f000 f982 	bl	8000b0c <HAL_TIM_MspPostInit>
-
 }
  8000808:	46c0      	nop			; (mov r8, r8)
  800080a:	46bd      	mov	sp, r7
