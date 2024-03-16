@@ -1,8 +1,6 @@
-# Step 1
-We first need to decide our measurements for our chasis and to get an estimate of the overall weight of our car. This is so we can decide the specifications of our motor, our specification for the wheels and to also take account the weight of the battery to our overall design.
+# 3/11/2024
+Milan has finished wiring up the H bridge and confirming that it reverses the motors direction and he has also set up the starter code to allow PWM signals.
 
-# Step 2
-We then need to figure out the overall design of the car, such as how many motors we need, and how steering is going to work. 
+# 3/15/2024
+Adriel has finished writing the event loop code in software which checks the state of the buttons (not yet from hardware) and sets the GPIO pins depending on the direction of the vehicle.
 
-# Step 3
-To steer, we will use one servo motor that connects to an axle, which will then cause our two front wheels to turn at the angle we want.
