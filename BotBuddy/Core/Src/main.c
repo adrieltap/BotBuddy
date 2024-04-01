@@ -334,7 +334,7 @@ void event_loop(void) {
 		b_buddy.button_state = 0x00;
 
 		RUN_MOTOR();
-		HAL_Delay(2000);
+		HAL_Delay(3000);
 	}
 }
 
