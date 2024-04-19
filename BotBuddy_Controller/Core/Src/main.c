@@ -97,7 +97,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+	  HAL_UART_Transmit(&hlpuart1, (uint8_t*)"test56789", 9, 1000);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

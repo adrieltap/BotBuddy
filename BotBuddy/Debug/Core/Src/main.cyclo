@@ -2,8 +2,7 @@
 ../Core/Src/main.c:140:6:SystemClock_Config	3
 ../Core/Src/main.c:182:13:MX_TIM2_Init	5
 ../Core/Src/main.c:235:13:MX_GPIO_Init	1
-../Core/Src/main.c:269:6:event_loop	7
-../Core/Src/main.c:354:6:DEBUG_GPIO_TEST	5
-../Core/Src/main.c:367:6:BT_BUDDY_Init	1
-../Core/Src/main.c:373:6:RUN_MOTOR	1
-../Core/Src/main.c:392:6:Error_Handler	1
+../Core/Src/main.c:263:6:event_loop	7
+../Core/Src/main.c:350:6:BT_BUDDY_Init	1
+../Core/Src/main.c:356:6:RUN_MOTOR	1
+../Core/Src/main.c:375:6:Error_Handler	1

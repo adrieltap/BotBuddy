@@ -77,7 +77,7 @@ static void MX_TIM2_Init(void);
 void event_loop(void);
 static void BT_BUDDY_Init(void);
 static void RUN_MOTOR(void);
-static void DEBUG_GPIO_TEST(void);
+
 
 /* USER CODE END PFP */
 
@@ -252,12 +252,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA9 PA10 PA11 PA12 */
-  GPIO_InitStruct.Pin = GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
 }
@@ -279,8 +273,8 @@ void event_loop(void) {
 		idx = (counter % 5);
 
 		b_buddy.rot_speed = (50 + (idx * 10)) % 100;
-		// b_buddy.button_state |= (1 << idx);
-		DEBUG_GPIO_TEST();
+		b_buddy.button_state |= (1 << idx);
+		//DEBUG_GPIO_TEST();
 
 
 
@@ -351,17 +345,6 @@ void event_loop(void) {
 	}
 }
 
-void DEBUG_GPIO_TEST(void){
-	if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_9)) {
-		b_buddy.button_state |= (1 << 0);
-	} else if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_10)){
-		b_buddy.button_state |= (1 << 1);
-	} else if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_11)){
-		b_buddy.button_state |= (1 << 2);
-	} else if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_12)) {
-		b_buddy.button_state |= (1 << 3);
-	}
-}
 
 /* Initialization funciton for our BotBuddy */
 void BT_BUDDY_Init(void) {
