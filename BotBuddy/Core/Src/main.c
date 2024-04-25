@@ -51,7 +51,7 @@
 /* Create Global Struct for the BotBuddy */
 typedef struct {
 	unsigned char power;
-	unsigned char button_state; // each bit represents [X, X, X, power, forward, backward, left, right]
+	volatile unsigned char button_state; // each bit represents [X, X, X, power, forward, backward, left, right]
 	unsigned int  rot_speed; // how fast our motor is spinning
 
 }Bot_Buddy;
@@ -59,6 +59,8 @@ typedef struct {
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+UART_HandleTypeDef hlpuart1;
+
 TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN PV */
@@ -72,12 +74,13 @@ Bot_Buddy b_buddy;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_LPUART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 void event_loop(void);
 static void BT_BUDDY_Init(void);
 static void RUN_MOTOR(void);
-
+static void READ_CONTROLLER(void);
 
 /* USER CODE END PFP */
 
@@ -118,6 +121,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_TIM2_Init();
+  MX_LPUART1_UART_Init();
   /* USER CODE BEGIN 2 */
   event_loop();
   /* USER CODE END 2 */
@@ -141,6 +145,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Configure the main internal regulator output voltage
   */
@@ -172,6 +177,46 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_LPUART1;
+  PeriphClkInit.Lpuart1ClockSelection = RCC_LPUART1CLKSOURCE_PCLK1;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+/**
+  * @brief LPUART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_LPUART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN LPUART1_Init 0 */
+
+  /* USER CODE END LPUART1_Init 0 */
+
+  /* USER CODE BEGIN LPUART1_Init 1 */
+
+  /* USER CODE END LPUART1_Init 1 */
+  hlpuart1.Instance = LPUART1;
+  hlpuart1.Init.BaudRate = 19200;
+  hlpuart1.Init.WordLength = UART_WORDLENGTH_8B;
+  hlpuart1.Init.StopBits = UART_STOPBITS_1;
+  hlpuart1.Init.Parity = UART_PARITY_NONE;
+  hlpuart1.Init.Mode = UART_MODE_TX_RX;
+  hlpuart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  hlpuart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  hlpuart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&hlpuart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN LPUART1_Init 2 */
+
+  /* USER CODE END LPUART1_Init 2 */
+
 }
 
 /**
@@ -242,15 +287,17 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7, GPIO_PIN_RESET);
-
-  /*Configure GPIO pins : PA3 PA5 PA6 PA7 */
-  GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  /*Configure GPIO pins : PA5 PA6 PA7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PB0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
@@ -273,9 +320,10 @@ void event_loop(void) {
 		idx = (counter % 5);
 
 		b_buddy.rot_speed = (50 + (idx * 10)) % 100;
-		b_buddy.button_state |= (1 << idx);
+		//b_buddy.button_state |= (1 << idx);
 		//DEBUG_GPIO_TEST();
 
+		while(!b_buddy.button_state){READ_CONTROLLER();}
 
 
 
@@ -289,7 +337,8 @@ void event_loop(void) {
 				// switch 1 on both motors will be OFF
 				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET);
-
+				uint8_t Test1[] = "Forward!/n";
+				HAL_UART_Transmit(&hlpuart1, Test1, sizeof(Test1), 10);
 				break;
 			// run both motors if it is backward
 			case BACKWARD:
@@ -300,6 +349,9 @@ void event_loop(void) {
 				// switch 1 on both motors will be ON
 				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
 				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
+
+				uint8_t Test2[] = "Backwards!/n";
+				HAL_UART_Transmit(&hlpuart1, Test2, sizeof(Test2), 10);
 
 				break;
 			// run the right motor to turn left
@@ -312,6 +364,9 @@ void event_loop(void) {
 				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
 				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 
+				uint8_t Test3[] = "Left!/n";
+				HAL_UART_Transmit(&hlpuart1, Test3, sizeof(Test3), 10);
+
 				break;
 			// run the left motor to turn right
 			case RIGHT:
@@ -323,6 +378,9 @@ void event_loop(void) {
 				// otherwise 0
 				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_RESET);
 				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET);
+
+				uint8_t Test4[] = "Right!/n";
+				HAL_UART_Transmit(&hlpuart1, Test4, sizeof(Test4), 10);
 
 				break;
 			case POWER:
@@ -341,10 +399,20 @@ void event_loop(void) {
 		b_buddy.button_state = 0x00;
 
 		RUN_MOTOR();
-		HAL_Delay(3000);
+		//HAL_Delay(100);
 	}
 }
 
+/* Reads our GPIO pin*/
+void READ_CONTROLLER(void) {
+	if (HAL_GPIO_ReadPin (GPIOA, GPIO_PIN_5)) {b_buddy.button_state = 1;};
+
+	if (HAL_GPIO_ReadPin (GPIOA, GPIO_PIN_6)) {b_buddy.button_state = 2;};
+
+	if (HAL_GPIO_ReadPin (GPIOA, GPIO_PIN_7)) {b_buddy.button_state = 4;};
+
+	if (HAL_GPIO_ReadPin (GPIOB, GPIO_PIN_0)) {b_buddy.button_state = 8;};
+}
 
 /* Initialization funciton for our BotBuddy */
 void BT_BUDDY_Init(void) {
