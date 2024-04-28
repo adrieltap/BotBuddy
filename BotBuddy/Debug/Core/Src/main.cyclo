@@ -3,8 +3,8 @@
 ../Core/Src/main.c:193:13:MX_LPUART1_UART_Init	2
 ../Core/Src/main.c:227:13:MX_TIM2_Init	5
 ../Core/Src/main.c:280:13:MX_GPIO_Init	1
-../Core/Src/main.c:310:6:event_loop	8
-../Core/Src/main.c:407:6:READ_CONTROLLER	5
-../Core/Src/main.c:418:6:BT_BUDDY_Init	1
-../Core/Src/main.c:424:6:RUN_MOTOR	1
-../Core/Src/main.c:443:6:Error_Handler	1
+../Core/Src/main.c:320:6:event_loop	8
+../Core/Src/main.c:414:6:READ_CONTROLLER	5
+../Core/Src/main.c:423:6:BT_BUDDY_Init	1
+../Core/Src/main.c:429:6:RUN_MOTOR	1
+../Core/Src/main.c:448:6:Error_Handler	1

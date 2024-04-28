@@ -32,6 +32,12 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
+// instructions to output through transmitter (offset by 1 for the write pin)
+#define FORWARD		8 //7 plus write pin
+#define BACKWARD	9 //8 plus write pin
+#define LEFT		10 //9 plus write pin
+#define RIGHT		11 //10 plus write pin
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -44,6 +50,9 @@ UART_HandleTypeDef hlpuart1;
 
 /* USER CODE BEGIN PV */
 
+/* Define transmitter button state */
+volatile unsigned char tm_button_state; // [X, X, X, X, write, t2, t1, t0]
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -51,6 +60,10 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_LPUART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
+
+void event_loop(void);
+static void READ_CONTROLLER(void);
+static void DEBUG_BLINKY(void);
 
 /* USER CODE END PFP */
 
@@ -89,7 +102,11 @@ int main(void)
   MX_GPIO_Init();
   MX_LPUART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_Delay(500);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11 | GPIO_PIN_10 | GPIO_PIN_9 | GPIO_PIN_8, 0);
+  tm_button_state = 0x00;
+  //DEBUG_BLINKY();
+  event_loop();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -167,8 +184,8 @@ static void MX_LPUART1_UART_Init(void)
 
   /* USER CODE END LPUART1_Init 1 */
   hlpuart1.Instance = LPUART1;
-  hlpuart1.Init.BaudRate = 209700;
-  hlpuart1.Init.WordLength = UART_WORDLENGTH_7B;
+  hlpuart1.Init.BaudRate = 19200;
+  hlpuart1.Init.WordLength = UART_WORDLENGTH_8B;
   hlpuart1.Init.StopBits = UART_STOPBITS_1;
   hlpuart1.Init.Parity = UART_PARITY_NONE;
   hlpuart1.Init.Mode = UART_MODE_TX_RX;
@@ -199,10 +216,20 @@ static void MX_GPIO_Init(void)
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
-  /*Configure GPIO pin : PA3 */
-  GPIO_InitStruct.Pin = GPIO_PIN_3;
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11, GPIO_PIN_SET);
+
+  /*Configure GPIO pins : PA4 PA5 PA6 PA7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA8 PA9 PA10 PA11 */
+  GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
@@ -210,7 +237,104 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+/* Event loop that handles our botbuddy when it is running */
+void event_loop(void) {
+	while(1){
 
+		while(!tm_button_state){
+			/* Continue polling the button state until one of them is pressed */
+			READ_CONTROLLER();
+		}
+
+		/* Set output through transmitter to be sent to the receiver depending on the button state */
+		switch(tm_button_state){
+			/* GPIO_PIN_11 -> write pin
+			 * GPIO_PIN_10 -> t2
+			 * GPIO_PIN_10 -> t1
+			 * GPIO_PIN_10 -> t0
+			 * Our encodings are active low because the transmitter is
+			 */
+			case FORWARD:
+				/* set write pin, and [t2, t1, t0] = [0, 0, 0] */
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11 | GPIO_PIN_10 | GPIO_PIN_9 | GPIO_PIN_8, 0);
+
+				/* Test for debugging */
+				uint8_t Test1[] = "Forward!/n";
+				HAL_UART_Transmit(&hlpuart1, Test1, sizeof(Test1), 10);
+
+				break;
+
+			case BACKWARD:
+				/* set write pin, and [t2, t1, t0] = [0, 0, 1] */
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11 | GPIO_PIN_10 | GPIO_PIN_9, 0);
+
+				/* Test for debugging */
+				uint8_t Test2[] = "Backward!/n";
+				HAL_UART_Transmit(&hlpuart1, Test2, sizeof(Test2), 10);
+
+				break;
+
+			case LEFT:
+				/* set write pin, and [t2, t1, t0] = [0, 1, 0] */
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11 | GPIO_PIN_10 | GPIO_PIN_8, 0);
+
+				/* Test for debugging */
+				uint8_t Test3[] = "Left!/n";
+				HAL_UART_Transmit(&hlpuart1, Test3, sizeof(Test3), 10);
+
+				break;
+
+			case RIGHT:
+				/* set write pin, and [t2, t1, t0] = [0, 1, 1] */
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11 | GPIO_PIN_10, 0);
+
+				/* Test for debugging */
+				uint8_t Test4[] = "Right!/n";
+				HAL_UART_Transmit(&hlpuart1, Test4, sizeof(Test4), 10);
+
+				break;
+			}
+
+		/* Give a delay in order for the reciver to decode and write to the motors */
+		HAL_Delay(1000);
+
+		/* reset write pin, and [t2, t1, t0] = [1, 1, 1] */
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11 | GPIO_PIN_10 | GPIO_PIN_9 | GPIO_PIN_8, 1);
+
+		/* extra delay just to be safe? */
+		HAL_Delay(1000);
+
+		/* Test for debugging */
+		uint8_t Test5[] = "Done!\r\n";
+		HAL_UART_Transmit(&hlpuart1, Test5, sizeof(Test5), 10);
+
+		/* reset button state back to 0 for polling loop */
+		tm_button_state = 0x00;
+	}
+}
+
+/* Read the buttons passed in to determine what control operation to begin executing */
+void READ_CONTROLLER(){
+	if (HAL_GPIO_ReadPin (GPIOA, GPIO_PIN_4)) {tm_button_state = FORWARD;}
+	else if (HAL_GPIO_ReadPin (GPIOA, GPIO_PIN_5)) {tm_button_state = BACKWARD;}
+	else if (HAL_GPIO_ReadPin (GPIOA, GPIO_PIN_6)) {tm_button_state = LEFT;}
+	else if (HAL_GPIO_ReadPin (GPIOA, GPIO_PIN_7)) {tm_button_state = RIGHT;}
+	else {tm_button_state = 0x00;}
+}
+
+/* Helped debug transmitter signals */
+void DEBUG_BLINKY(){
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
+		HAL_Delay(500);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
+		HAL_Delay(500);
+}
 /* USER CODE END 4 */
 
 /**

@@ -287,6 +287,9 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7, GPIO_PIN_RESET);
+
   /*Configure GPIO pins : PA5 PA6 PA7 */
   GPIO_InitStruct.Pin = GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -297,6 +300,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_0;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB4 PB5 PB6 PB7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
@@ -327,91 +337,86 @@ void event_loop(void) {
 
 
 
-		switch(b_buddy.button_state) {
-			// run both motors forward by switching GPIO PINs ON for S0 for both motors
+		switch(b_buddy.button_state){
+			/* GPIO_PIN_11 -> write pin
+			 * GPIO_PIN_10 -> t2
+			 * GPIO_PIN_10 -> t1
+			 * GPIO_PIN_10 -> t0
+			 * Our encodings are active low because the transmitter is
+			 */
 			case FORWARD:
-				// switch 0 on both motors will be ON
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET);
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
+				/* set write pin, and [t2, t1, t0] = [0, 0, 0] */
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7 | GPIO_PIN_6 | GPIO_PIN_5 | GPIO_PIN_4, 0);
 
-				// switch 1 on both motors will be OFF
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET);
+				/* Test for debugging */
 				uint8_t Test1[] = "Forward!/n";
 				HAL_UART_Transmit(&hlpuart1, Test1, sizeof(Test1), 10);
+
 				break;
-			// run both motors if it is backward
+
 			case BACKWARD:
-				// switch 0 on both motors will be OFF
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_RESET);
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
+				/* set write pin, and [t2, t1, t0] = [0, 0, 1] */
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7 | GPIO_PIN_6 | GPIO_PIN_5, 0);
 
-				// switch 1 on both motors will be ON
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
-
-				uint8_t Test2[] = "Backwards!/n";
+				/* Test for debugging */
+				uint8_t Test2[] = "Backward!/n";
 				HAL_UART_Transmit(&hlpuart1, Test2, sizeof(Test2), 10);
 
 				break;
-			// run the right motor to turn left
+
 			case LEFT:
-				// s1 for left motor will be 1 and s0 for right motor will be 1
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET);
+				/* set write pin, and [t2, t1, t0] = [0, 1, 0] */
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7 | GPIO_PIN_6 | GPIO_PIN_4, 0);
 
-				// otherwise 0
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-
+				/* Test for debugging */
 				uint8_t Test3[] = "Left!/n";
 				HAL_UART_Transmit(&hlpuart1, Test3, sizeof(Test3), 10);
 
 				break;
-			// run the left motor to turn right
+
 			case RIGHT:
+				/* set write pin, and [t2, t1, t0] = [0, 1, 1] */
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7 | GPIO_PIN_6, 0);
 
-				// s0 for left motor will be 1 and s1 of right motor should be 1
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-
-				// otherwise 0
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_RESET);
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET);
-
+				/* Test for debugging */
 				uint8_t Test4[] = "Right!/n";
 				HAL_UART_Transmit(&hlpuart1, Test4, sizeof(Test4), 10);
 
 				break;
-			case POWER:
-				// turn off all PINS
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_RESET);
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET);
+			}
 
-				break;
-		}
 		/* For testing */
 		// shift the next bit
 		counter++;
+
+		/* Give a delay in order for the reciver to decode and write to the motors */
+		HAL_Delay(1000);
+
+		/* reset write pin, and [t2, t1, t0] = [1, 1, 1] */
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11 | GPIO_PIN_10 | GPIO_PIN_9 | GPIO_PIN_8, 1);
+
+		/* extra delay just to be safe? */
+		HAL_Delay(1000);
+
+		/* Test for debugging */
+		uint8_t Test5[] = "Done!\r\n";
+		HAL_UART_Transmit(&hlpuart1, Test5, sizeof(Test5), 10);
+
 		// reset button state
 		b_buddy.button_state = 0x00;
 
-		RUN_MOTOR();
+		//RUN_MOTOR();
 		//HAL_Delay(100);
 	}
 }
 
 /* Reads our GPIO pin*/
 void READ_CONTROLLER(void) {
-	if (HAL_GPIO_ReadPin (GPIOA, GPIO_PIN_5)) {b_buddy.button_state = 1;};
-
-	if (HAL_GPIO_ReadPin (GPIOA, GPIO_PIN_6)) {b_buddy.button_state = 2;};
-
-	if (HAL_GPIO_ReadPin (GPIOA, GPIO_PIN_7)) {b_buddy.button_state = 4;};
-
-	if (HAL_GPIO_ReadPin (GPIOB, GPIO_PIN_0)) {b_buddy.button_state = 8;};
+	if (HAL_GPIO_ReadPin (GPIOA, GPIO_PIN_5)) {b_buddy.button_state = FORWARD;}
+	else if (HAL_GPIO_ReadPin (GPIOA, GPIO_PIN_6)) {b_buddy.button_state = BACKWARD;}
+	else if (HAL_GPIO_ReadPin (GPIOA, GPIO_PIN_7)) {b_buddy.button_state = LEFT;}
+	else if (HAL_GPIO_ReadPin (GPIOB, GPIO_PIN_0)) {b_buddy.button_state = RIGHT;}
+	else {b_buddy.button_state = 0x00;}
 }
 
 /* Initialization funciton for our BotBuddy */

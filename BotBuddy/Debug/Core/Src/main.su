@@ -3,8 +3,8 @@
 ../Core/Src/main.c:193:13:MX_LPUART1_UART_Init	8	static
 ../Core/Src/main.c:227:13:MX_TIM2_Init	32	static
 ../Core/Src/main.c:280:13:MX_GPIO_Init	48	static
-../Core/Src/main.c:310:6:event_loop	72	static
-../Core/Src/main.c:407:6:READ_CONTROLLER	8	static
-../Core/Src/main.c:418:6:BT_BUDDY_Init	8	static
-../Core/Src/main.c:424:6:RUN_MOTOR	8	static
-../Core/Src/main.c:443:6:Error_Handler	8	static,ignoring_inline_asm
+../Core/Src/main.c:320:6:event_loop	80	static
+../Core/Src/main.c:414:6:READ_CONTROLLER	8	static
+../Core/Src/main.c:423:6:BT_BUDDY_Init	8	static
+../Core/Src/main.c:429:6:RUN_MOTOR	8	static
+../Core/Src/main.c:448:6:Error_Handler	8	static,ignoring_inline_asm
