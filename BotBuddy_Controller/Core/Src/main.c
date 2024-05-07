@@ -37,6 +37,8 @@
 #define BACKWARD	9 //8 plus write pin
 #define LEFT		10 //9 plus write pin
 #define RIGHT		11 //10 plus write pin
+#define STOP		12 //11 plus write pin
+#define SPEED_CHANGE		13 //12 plus write pin
 
 /* USER CODE END PD */
 
@@ -215,6 +217,7 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11, GPIO_PIN_SET);
@@ -224,6 +227,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB0 PB1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PA8 PA9 PA10 PA11 */
   GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11;
@@ -293,20 +302,40 @@ void event_loop(void) {
 				HAL_UART_Transmit(&hlpuart1, Test4, sizeof(Test4), 10);
 
 				break;
+
+			case STOP:
+				/* set write pin, and [t2, t1, t0] = [1, 0, 0] */
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11 | GPIO_PIN_9 | GPIO_PIN_8, 0);
+
+				/* Test for debugging */
+				uint8_t Test5[] = "Stop!/n";
+				HAL_UART_Transmit(&hlpuart1, Test5, sizeof(Test5), 10);
+
+				break;
+
+			case SPEED_CHANGE:
+				/* set write pin, and [t2, t1, t0] = [1, 0, 1] */
+				HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11 | GPIO_PIN_9, 0);
+
+				/* Test for debugging */
+				uint8_t Test6[] = "Speed change!/n";
+				HAL_UART_Transmit(&hlpuart1, Test6, sizeof(Test6), 10);
+
+				break;
 			}
 
 		/* Give a delay in order for the reciver to decode and write to the motors */
-		HAL_Delay(1000);
+		HAL_Delay(750);
 
 		/* reset write pin, and [t2, t1, t0] = [1, 1, 1] */
 		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11 | GPIO_PIN_10 | GPIO_PIN_9 | GPIO_PIN_8, 1);
 
 		/* extra delay just to be safe? */
-		HAL_Delay(1000);
+		HAL_Delay(750);
 
 		/* Test for debugging */
-		uint8_t Test5[] = "Done!\r\n";
-		HAL_UART_Transmit(&hlpuart1, Test5, sizeof(Test5), 10);
+		uint8_t Test7[] = "Done!\r\n";
+		HAL_UART_Transmit(&hlpuart1, Test7, sizeof(Test7), 10);
 
 		/* reset button state back to 0 for polling loop */
 		tm_button_state = 0x00;
@@ -319,6 +348,8 @@ void READ_CONTROLLER(){
 	else if (HAL_GPIO_ReadPin (GPIOA, GPIO_PIN_5)) {tm_button_state = BACKWARD;}
 	else if (HAL_GPIO_ReadPin (GPIOA, GPIO_PIN_6)) {tm_button_state = LEFT;}
 	else if (HAL_GPIO_ReadPin (GPIOA, GPIO_PIN_7)) {tm_button_state = RIGHT;}
+	else if (HAL_GPIO_ReadPin (GPIOB, GPIO_PIN_0)) {tm_button_state = STOP;}
+	else if (HAL_GPIO_ReadPin (GPIOB, GPIO_PIN_1)) {tm_button_state = SPEED_CHANGE;}
 	else {tm_button_state = 0x00;}
 }
 
